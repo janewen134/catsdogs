@@ -186,14 +186,92 @@ history = model.fit_generator(
 
 # In[ ]:
 
+import numpy as np
+import random
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
+
+# define a new Model that takes an img as input and will output
+# intermediate representations for all layers in the previous model after
+# the first
+successive_outputs = [layers.output for layer in model.layers[1:]]
+visualization_model = Model(img_input, successive_outputs)
+
+# prepare a random input img of a cat or dog from the training set
+cat_img_files = [os.path.join(train_cats_dir, f) for f in train_cat_fnames]
+dog_img_files = [os.path.join(train_dogs_dir, f) for f in train_dog_fnames]
+img_path = random.choice(cat_img_files + dog_img_files)
+
+img = load_img(img_path, target_size=(150, 150))    # this is a PIL img
+x = img_to_array(img)   # Numpy array with shape (150, 150, 3)
+x = x.reshape((1,) + x.shape)
+
+# Rescale by 1/255
+x /= 255
+
+# Let's run our image through our network, thus obtaining all
+# intermediate representations for this img.
+successive_feature_maps = visualization_model.predict(x)
+
+# These are names of the layers
+layer_names = [layer.name for layer in model.layers]
+
+# Now let's display our representations
+for layer_name, feature_map in zip(layer_names, successive_feature_maps):
+    if len(feature_map.shape) == 4:
+        # Just do this for the conv/ maxpool layers, not the fully-connected layers
+        n_features = feature_map.shape[-1]  # number of features in feature map
+
+        # retrieve a list of lists results on training and validattion data
+        # sets for each training epoch
+        loss = history.history['val_loss']
+
+        # Get number of epochs
+        epochs = range(len(acc))
+
+        # Plot training and validation accuracy per epoch
+        plt.plot(epochs, acc)
+        plt.plot(epochs, val_acc)
+        plt.title('Train and validation accuracy')
+
+        plt.figure()
+
+        # plot training and validation loss per epoch
+        plt.plot(epochs, loss)
+        plt.plot(epochs, val_loss)
+        plt.title('Training and validation loss')
 
 
-
-
-
-
+# Evaluating Accuracy and Loss for the Model
+# plot the training / validation accuracy and loss as collected during training
 # In[ ]:
 
+# Retrieve a list of accuracy results on training and validation data
+# sets for each training epoch
+acc = history.history['acc']
+val_acc = history.history['val_acc']
 
+# Retrieve a list of list results on training and validation data
+# sets for each training epoch
+loss = history.history['loss']
+val_loss = history.history['val_loss']
 
+# Get number of epochs
+epochs = range(len(acc))
 
+# Plot training and validation accuracy per epoch
+plt.plot(epochs, acc)
+plt.plot(epochs, val_acc)
+plt.title('Training and validation accuracy')
+
+plt.figure()
+
+# Plot training and validation loss per epoch
+plt.plot(epochs, loss)
+plt.plot(epochs, val_loss)
+plt.title('Training and validation loss')
+
+# Clean Up
+# In[ ]:
+
+import os, signal
+os.kill(os.getpid(), signal.SIGKILL)
